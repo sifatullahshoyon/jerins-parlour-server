@@ -40,7 +40,26 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     //   await client.connect();
 
-    
+    const serviceCollection = client.db('jerinsParlour_DB').collection('services');
+
+
+    // Service
+
+    app.get('/services' , async (req, res) => {
+        try {
+            const result = await serviceCollection.find().toArray();
+            res.send(result);
+        } catch (error) {
+            console.error("Error fetching services", err);
+            res.status(500).send({ error: "Error fetching services" });
+        }
+    });
+
+    app.post('/services' , async(req,res) => {
+        const cartItem = req.body;
+        const result = await serviceCollection.insertOne(cartItem);
+        res.send(result);
+    });
 
 
     // Send a ping to confirm a successful connection
