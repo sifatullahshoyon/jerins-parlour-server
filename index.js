@@ -41,10 +41,10 @@ async function run() {
     //   await client.connect();
 
     const serviceCollection = client.db('jerinsParlour_DB').collection('services');
+    const cartCollection = client.db('jerinsParlour_DB').collection('carts');
 
 
     // Service
-
     app.get('/services' , async (req, res) => {
         try {
             const result = await serviceCollection.find().toArray();
@@ -55,10 +55,36 @@ async function run() {
         }
     });
 
-    app.post('/services' , async(req,res) => {
-        const cartItem = req.body;
-        const result = await serviceCollection.insertOne(cartItem);
-        res.send(result);
+    // app.post('/services' , async(req,res) => {
+    //     const cartItem = req.body;
+    //     const result = await serviceCollection.insertOne(cartItem);
+    //     res.send(result);
+    // });
+
+    // Carts:-
+    app.get('/carts', async (req, res) => {
+        try {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+            
+        } catch (error) {
+            console.error("Error fetching carts", err);
+            res.status(500).send({ error: "Error fetching carts" });
+        }
+    });
+
+    app.post('/carts' , async (req, res) => {
+        try {
+            const cartItem = req.body;
+            const result = await cartCollection.insertOne(cartItem);
+            res.send(result);
+            
+        } catch (error) {
+            console.error("Error Add Item To The Database", err);
+            res.status(500).send({ error: "Add Item To The Database" });
+        }
     });
 
 
