@@ -3,7 +3,7 @@ require("dotenv").config();
 const app = express();
 const morgan = require("morgan");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.port || 5000;
 
 // middleware
@@ -84,6 +84,19 @@ async function run() {
         } catch (error) {
             console.error("Error Add Item To The Database", err);
             res.status(500).send({ error: "Add Item To The Database" });
+        }
+    });
+
+        app.delete('/carts/:id' , async (req, res) => {
+        try {
+            const id = req.params.id;
+            const query = {_id : new ObjectId(id)};
+            const result = await cartCollection.deleteOne(query);
+            res.send(result);
+            
+        } catch (error) {
+            console.error("Error Delete Single Item", err);
+            res.status(500).send({ error: "Error Delete Single Item" });
         }
     });
 
