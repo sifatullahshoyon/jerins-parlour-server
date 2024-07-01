@@ -47,6 +47,17 @@ async function run() {
 
 
     // User Related Apis:-
+
+    app.get('/users' , async (req, res) => {
+        try {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        } catch (error) {
+            console.error("Error fetching users", err);
+            res.status(500).send({ error: "Error users services" });
+        }
+    });
+
     app.post('/users' , async (req, res) => {
         try {
             const user = req.body;
