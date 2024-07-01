@@ -42,7 +42,27 @@ async function run() {
 
     const serviceCollection = client.db('jerinsParlour_DB').collection('services');
     const cartCollection = client.db('jerinsParlour_DB').collection('carts');
+    const userCollection = client.db('jerinsParlour_DB').collection('users');
 
+
+
+    // User Related Apis:-
+    app.post('/users' , async (req, res) => {
+        try {
+            const user = req.body;
+            const query = {email : user.email}
+            const existingUser = await userCollection.findOne(query);
+            if(existingUser){
+                return res.send({message : 'user already Exists' , insertedId : null})
+            }
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+            
+        } catch (error) {
+            console.error("User Info Add To The Database", err);
+            res.status(500).send({ error: "User Info Add To The Database" });
+        }
+    });
 
     // Service
     app.get('/services' , async (req, res) => {
