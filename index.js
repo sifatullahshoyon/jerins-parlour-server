@@ -4,7 +4,8 @@ const app = express();
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const multer = require('multer');
+const { MongoClient, ServerApiVersion, ObjectId , GridFSBucket } = require("mongodb");
 const port = process.env.port || 5000;
 
 // middleware
@@ -57,9 +58,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     //   await client.connect();
 
-    const serviceCollection = client
-      .db("jerinsParlour_DB")
-      .collection("services");
+    const serviceCollection = client.db("jerinsParlour_DB").collection("services");
     const cartCollection = client.db("jerinsParlour_DB").collection("carts");
     const userCollection = client.db("jerinsParlour_DB").collection("users");
 
@@ -72,7 +71,7 @@ async function run() {
         });
         res.send({ token });
       } catch (error) {
-        console.error("jwt error", err);
+        console.error("jwt error", error);
       }
     });
 
@@ -94,7 +93,7 @@ async function run() {
         const result = await userCollection.find().toArray();
         res.send(result);
       } catch (error) {
-        console.error("Error fetching users", err);
+        console.error("Error fetching users", error);
       }
     });
 
@@ -124,7 +123,7 @@ async function run() {
         const result = await userCollection.insertOne(user);
         res.send(result);
       } catch (error) {
-        console.error("User Info Add To The Database", err);
+        console.error("User Info Add To The Database", error);
       }
     });
 
@@ -144,7 +143,7 @@ async function run() {
           const result = await userCollection.updateOne(filter, updateDoc);
           res.send(result);
         } catch (error) {
-          console.error("Error Update Single user role", err);
+          console.error("Error Update Single user role", error);
         }
       }
     );
@@ -156,7 +155,7 @@ async function run() {
         const result = await userCollection.deleteOne(query);
         res.send(result);
       } catch (error) {
-        console.error("Error Delete Single user", err);
+        console.error("Error Delete Single user", error);
       }
     });
 
@@ -166,15 +165,39 @@ async function run() {
         const result = await serviceCollection.find().toArray();
         res.send(result);
       } catch (error) {
-        console.error("Error fetching services", err);
+        console.error("Error fetching services", error);
       }
     });
 
-    // app.post('/services' , async(req,res) => {
-    //     const cartItem = req.body;
-    //     const result = await serviceCollection.insertOne(cartItem);
-    //     res.send(result);
-    // });
+    app.get("/services/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)};
+        const result = await serviceCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching services", error);
+      }
+    });
+
+    app.post('/services' , verifyToken , verifyAdmin , async(req,res) => {
+        const cartItem = req.body;
+        const result = await serviceCollection.insertOne(cartItem);
+        res.send(result);
+    });
+
+    app.delete("/services/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        console.log("🚀 ~ app.delete ~ id:", id)
+        
+        const query = { _id: new ObjectId(id) };
+        const result = await serviceCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        console.error("Error Delete Single item", error);
+      }
+    });
 
     // Carts:-
     app.get("/carts", async (req, res) => {
@@ -184,7 +207,7 @@ async function run() {
         const result = await cartCollection.find(query).toArray();
         res.send(result);
       } catch (error) {
-        console.error("Error fetching carts", err);
+        console.error("Error fetching carts", error);
       }
     });
 
@@ -194,7 +217,7 @@ async function run() {
         const result = await cartCollection.insertOne(cartItem);
         res.send(result);
       } catch (error) {
-        console.error("Error Add Item To The Database", err);
+        console.error("Error Add Item To The Database", error);
       }
     });
 
@@ -205,9 +228,36 @@ async function run() {
         const result = await cartCollection.deleteOne(query);
         res.send(result);
       } catch (error) {
-        console.error("Error Delete Single Item", err);
+        console.error("Error Delete Single Item", error);
       }
     });
+
+    // Image Upload On server:-
+    // const serviceCollection = client.db("jerinsParlour_DB").collection("services");
+    // const bucket = new GridFSBucket(serviceCollection, { bucketName: 'uploads' });
+    // Create storage engine
+    // const storage = multer.memoryStorage();
+    // const upload = multer({ storage });
+
+    // app.post('/upload', upload.single('image'), (req, res) => {
+    //     const file = req.file;
+    
+    //     if (!file) {
+    //       return res.status(400).send('No file uploaded.');
+    //     }
+    
+    //     const uploadStream = bucket.openUploadStream(file.image);
+    //     uploadStream.end(file.buffer);
+        
+    //     uploadStream.on('finish', () => {
+    //       res.status(201).json({ file: file.originalname });
+    //     });
+    
+    //     uploadStream.on('error', (error) => {
+    //       console.error('Upload error:', error);
+    //       res.status(500).send('Error uploading file.');
+    //     });
+    //   });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
