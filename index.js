@@ -4,8 +4,15 @@ const app = express();
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
 const cors = require("cors");
-const multer = require('multer');
-const { MongoClient, ServerApiVersion, ObjectId , GridFSBucket } = require("mongodb");
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
+
+const multer = require("multer");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ObjectId,
+  GridFSBucket,
+} = require("mongodb");
 const port = process.env.port || 5000;
 
 // middleware
@@ -58,7 +65,9 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     //   await client.connect();
 
-    const serviceCollection = client.db("jerinsParlour_DB").collection("services");
+    const serviceCollection = client
+      .db("jerinsParlour_DB")
+      .collection("services");
     const cartCollection = client.db("jerinsParlour_DB").collection("carts");
     const userCollection = client.db("jerinsParlour_DB").collection("users");
 
@@ -172,7 +181,7 @@ async function run() {
     app.get("/services/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const query = {_id : new ObjectId(id)};
+        const query = { _id: new ObjectId(id) };
         const result = await serviceCollection.findOne(query);
         res.send(result);
       } catch (error) {
@@ -180,17 +189,17 @@ async function run() {
       }
     });
 
-    app.post('/services' , verifyToken , verifyAdmin , async(req,res) => {
-        const cartItem = req.body;
-        const result = await serviceCollection.insertOne(cartItem);
-        res.send(result);
+    app.post("/services", verifyToken, verifyAdmin, async (req, res) => {
+      const cartItem = req.body;
+      const result = await serviceCollection.insertOne(cartItem);
+      res.send(result);
     });
 
     app.delete("/services/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        console.log("🚀 ~ app.delete ~ id:", id)
-        
+        console.log("🚀 ~ app.delete ~ id:", id);
+
         const query = { _id: new ObjectId(id) };
         const result = await serviceCollection.deleteOne(query);
         res.send(result);
@@ -241,23 +250,40 @@ async function run() {
 
     // app.post('/upload', upload.single('image'), (req, res) => {
     //     const file = req.file;
-    
+
     //     if (!file) {
     //       return res.status(400).send('No file uploaded.');
     //     }
-    
+
     //     const uploadStream = bucket.openUploadStream(file.image);
     //     uploadStream.end(file.buffer);
-        
+
     //     uploadStream.on('finish', () => {
     //       res.status(201).json({ file: file.originalname });
     //     });
-    
+
     //     uploadStream.on('error', (error) => {
     //       console.error('Upload error:', error);
     //       res.status(500).send('Error uploading file.');
     //     });
     //   });
+
+    // Payment API:
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseFloat(price * 100);
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
