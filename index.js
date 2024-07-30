@@ -70,6 +70,9 @@ async function run() {
       .collection("services");
     const cartCollection = client.db("jerinsParlour_DB").collection("carts");
     const userCollection = client.db("jerinsParlour_DB").collection("users");
+    const paymentCollection = client
+      .db("jerinsParlour_DB")
+      .collection("payments");
 
     // jwt related api:
     app.post("/jwt", async (req, res) => {
@@ -283,6 +286,18 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    app.post("/payments", verifyToken, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = {
+        _id: { $in: payment.cartItemsId.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await cartCollection.deleteMany(query);
+
+      res.send({ insertResult, deleteResult });
     });
 
     // Send a ping to confirm a successful connection
