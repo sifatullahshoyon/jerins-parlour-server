@@ -198,11 +198,26 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/services/:id", async (req, res) => {
+    app.patch("/services/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const items = req.body;
+      console.log("🚀 ~ app.patch ~ cartItem:", items )
+      
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          cartItem: items 
+        },
+      };
+      const result = await serviceCollection.updateOne(filter , updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/services/:id", verifyToken , verifyAdmin, async (req, res) => {
       try {
         const id = req.params.id;
-        console.log("🚀 ~ app.delete ~ id:", id);
-
+        console.log("🚀 ~ app.delete ~ id:", id)
+        
         const query = { _id: new ObjectId(id) };
         const result = await serviceCollection.deleteOne(query);
         res.send(result);
